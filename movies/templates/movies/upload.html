@@ -1,0 +1,296 @@
+{% extends "movies/base.html" %}
+{% load static i18n %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-primary text-white py-3">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h2 class="h5 mb-0">
+                            <i class="fas fa-file-upload me-2"></i> {% trans "تحميل ملف بيانات الأفلام" %}
+                        </h2>
+                        <a href="{% url 'results' %}" class="btn btn-sm btn-outline-light">
+                            <i class="fas fa-list me-1"></i> {% trans "عرض النتائج" %}
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body px-4 py-4">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas 
+                                    {% if message.tags == 'error' %}fa-exclamation-circle 
+                                    {% elif message.tags == 'warning' %}fa-exclamation-triangle 
+                                    {% else %}fa-check-circle{% endif %} 
+                                    me-2"></i>
+                                <div>{{ message }}</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data" id="uploadForm" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- منطقة رفع الملف -->
+                        <div class="mb-4">
+                            <div class="file-upload-area border rounded-3 p-5 text-center position-relative bg-light">
+                                <div class="file-upload-icon mb-3">
+                                    <i class="fas fa-file-excel fa-4x text-primary"></i>
+                                </div>
+                                
+                                <h5 class="mb-3 text-muted">{% trans "اسحب وأسقط الملف هنا" %}</h5>
+                                <p class="text-muted mb-3">{% trans "أو" %}</p>
+                                
+                                <div class="custom-file">
+                                    {{ form.file }}
+                                    <label class="btn btn-primary px-4" for="{{ form.file.id_for_label }}" id="fileLabel">
+                                        <i class="fas fa-folder-open me-2"></i> {% trans "اختر ملف" %}
+                                    </label>
+                                    <div class="invalid-feedback text-center mt-2" id="fileError">
+                                        {% for error in form.file.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div id="fileName" class="mt-4"></div>
+                                
+                                <div class="file-upload-requirements mt-3">
+                                    <ul class="list-unstyled text-muted small">
+                                        <li><i class="fas fa-check-circle text-success me-2"></i> {% trans "الحد الأقصى لحجم الملف: 10MB" %}</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i> {% trans "الامتدادات المسموحة: .xlsx, .xls, .csv" %}</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i> {% trans "يجب أن يحتوي الملف على أعمدة: الترتيب، العنوان، السنة، التقييم" %}</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg py-3" id="submitBtn">
+                                <i class="fas fa-upload me-2"></i> {% trans "تحميل وعرض البيانات" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .file-upload-area {
+        border: 2px dashed #dee2e6;
+        transition: all 0.3s ease;
+        background-color: #f8fafc;
+    }
+    .file-upload-area:hover {
+        border-color: #0d6efd;
+        background-color: #f0f7ff;
+    }
+    .file-upload-area.dragover {
+        border-color: #0d6efd;
+        background-color: #e7f1ff;
+        transform: scale(1.01);
+        box-shadow: 0 0 10px rgba(13, 110, 253, 0.2);
+    }
+    .custom-file input[type="file"] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+    }
+    #fileLabel {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    #fileLabel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    #fileName .text-danger {
+        font-size: 0.9rem;
+    }
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+    .file-upload-requirements li {
+        margin-bottom: 5px;
+    }
+    .alert {
+        direction: rtl;
+        text-align: right;
+    }
+    #submitBtn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    @media (max-width: 576px) {
+        .file-upload-area {
+            padding: 2rem 1rem !important;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('{{ form.file.id_for_label }}');
+    const fileError = document.getElementById('fileError');
+    const fileNameDiv = document.getElementById('fileName');
+    const submitBtn = document.getElementById('submitBtn');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadArea = document.querySelector('.file-upload-area');
+    const MAX_SIZE_MB = 10;
+    const VALID_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
+
+    // تحسين تجربة السحب والإفلات
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight() {
+        uploadArea.classList.add('dragover');
+    }
+
+    function unhighlight() {
+        uploadArea.classList.remove('dragover');
+    }
+
+    uploadArea.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            fileInput.files = files;
+            validateFile(fileInput);
+        }
+    }
+
+    // التحقق من الملف عند الاختيار
+    function validateFile(input) {
+        resetValidation();
+        
+        if (!input.files || input.files.length === 0) {
+            fileNameDiv.innerHTML = '';
+            return;
+        }
+
+        const file = input.files[0];
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const fileExt = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+        
+        // التحقق من الامتداد
+        if (!VALID_EXTENSIONS.includes(fileExt)) {
+            showFileError(file, '{% trans "نوع الملف غير مدعوم. يرجى استخدام ملف Excel أو CSV" %}');
+            return;
+        }
+        
+        // التحقق من الحجم
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            showFileError(file, '{% trans "حجم الملف يتجاوز الحد المسموح به (10MB). حجم الملف: " %}' + fileSizeMB + 'MB');
+            return;
+        }
+        
+        // إذا كان الملف صالحاً
+        showFileSuccess(file, fileSizeMB);
+    }
+
+    function resetValidation() {
+        fileInput.classList.remove('is-invalid');
+        fileError.textContent = '';
+    }
+
+    function showFileError(file, errorMsg) {
+        fileNameDiv.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show py-2">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <div>
+                        <strong>${file.name}</strong>
+                        <div class="small">${errorMsg}</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        fileInput.classList.add('is-invalid');
+        fileError.textContent = errorMsg;
+    }
+
+    function showFileSuccess(file, fileSizeMB) {
+        fileNameDiv.innerHTML = `
+            <div class="alert alert-success py-2 mb-0">
+                <div class="d-flex align-items-center justify-content-center">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <div>
+                        <strong>${file.name}</strong>
+                        <div class="small">${fileSizeMB} MB - {% trans "جاهز للتحميل" %}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // التحقق النهائي قبل الإرسال
+    uploadForm.addEventListener('submit', function(e) {
+        if (!fileInput.files || fileInput.files.length === 0) {
+            showFileError({name: '{% trans "لم يتم اختيار ملف" %}'}, '{% trans "الرجاء اختيار ملف للرفع" %}');
+            e.preventDefault();
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const fileExt = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+        
+        if (!VALID_EXTENSIONS.includes(fileExt)) {
+            showFileError(file, '{% trans "نوع الملف غير مدعوم" %}');
+            e.preventDefault();
+            return;
+        }
+        
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            showFileError(file, '{% trans "حجم الملف يتجاوز الحد المسموح به" %} (' + fileSizeMB + ' MB)');
+            e.preventDefault();
+            return;
+        }
+        
+        // تعطيل الزر أثناء المعالجة
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            {% trans "جاري معالجة الملف..." %}
+        `;
+    });
+
+    // تفعيل التحقق عند تغيير الملف
+    fileInput.addEventListener('change', function() {
+        validateFile(this);
+    });
+});
+</script>
+{% endblock %}

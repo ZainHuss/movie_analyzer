@@ -1,0 +1,13 @@
+<!-- movies/templates/movies/error.html -->
+{% extends "movies/base.html" %}
+
+{% block content %}
+<div class="alert alert-danger">
+    <h2>حدث خطأ</h2>
+    <p>نوع الخطأ: {{ error_type }}</p>
+    {% if error_details %}
+    <p>التفاصيل: {{ error_details }}</p>
+    {% endif %}
+    <a href="/" class="btn btn-primary">العودة للصفحة الرئيسية</a>
+</div>
+{% endblock %}

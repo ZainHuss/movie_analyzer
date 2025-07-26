@@ -1,0 +1,200 @@
+{% extends "movies/base.html" %}
+{% load django_tables2 %}
+{% load humanize %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">📊 نتائج تحليل بيانات الأفلام</h1>
+
+    {% if error_message %}
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        {{ error_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    {% if success_message %}
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i>
+        {{ success_message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <section class="mb-5">
+        <h2 class="text-center mb-4">🏆 أعلى القيم</h2>
+        <div class="row g-4">
+            <!-- أعلى تقييم -->
+            <div class="col-md-3">
+                <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0"><i class="fas fa-star"></i> أعلى تقييم</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if highest_values.highest_rating %}
+                        <h3 class="text-success">{{ highest_values.highest_rating.rating|floatformat:1 }}</h3>
+                        <p class="card-text">{{ highest_values.highest_rating.title|truncatechars:25 }}</p>
+                        <small class="text-muted">سنة: {{ highest_values.highest_rating.year }}</small>
+                        {% else %}
+                        <p class="text-muted"><i class="fas fa-info-circle"></i> لا توجد بيانات</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- أعلى إيرادات -->
+            <div class="col-md-3">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0"><i class="fas fa-money-bill-wave"></i> أعلى إيرادات</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if highest_values.highest_revenue %}
+                        <h3 class="text-primary">${{ highest_values.highest_revenue.revenue|floatformat:2|intcomma }}M</h3>
+                        <p class="card-text">{{ highest_values.highest_revenue.title|truncatechars:25 }}</p>
+                        <small class="text-muted">المخرج: {{ highest_values.highest_revenue.director|truncatechars:20 }}</small>
+                        {% else %}
+                        <p class="text-muted"><i class="fas fa-info-circle"></i> لا توجد بيانات</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- أعلى Metascore -->
+            <div class="col-md-3">
+                <div class="card h-100 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="card-title mb-0"><i class="fas fa-award"></i> أعلى Metascore</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if highest_values.highest_metascore %}
+                        <h3 class="text-warning">{{ highest_values.highest_metascore.metascore }}</h3>
+                        <p class="card-text">{{ highest_values.highest_metascore.title|truncatechars:25 }}</p>
+                        <small class="text-muted">التقييم: {{ highest_values.highest_metascore.rating|floatformat:1 }}</small>
+                        {% else %}
+                        <p class="text-muted"><i class="fas fa-info-circle"></i> لا توجد بيانات</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- الأكثر تصويتاً -->
+            <div class="col-md-3">
+                <div class="card h-100 border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="card-title mb-0"><i class="fas fa-users"></i> الأكثر تصويتاً</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if highest_values.most_votes %}
+                        <h3 class="text-danger">{{ highest_values.most_votes.votes|intcomma }}</h3>
+                        <p class="card-text">{{ highest_values.most_votes.title|truncatechars:25 }}</p>
+                        <small class="text-muted">النوع: {{ highest_values.most_votes.genre|truncatechars:20 }}</small>
+                        {% else %}
+                        <p class="text-muted"><i class="fas fa-info-circle"></i> لا توجد بيانات</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">🎬 جميع الأفلام</h2>
+            <div>
+                <a href="{% url 'upload' %}" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-upload"></i> رفع ملف جديد
+                </a>
+                <span class="badge bg-secondary">
+                    <i class="fas fa-film"></i> {{ table.rows|length }} أفلام
+                </span>
+            </div>
+        </div>
+        
+        {% if table.rows %}
+        <div class="table-responsive">
+            {% render_table table %}
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> لا توجد بيانات لعرضها
+        </div>
+        {% endif %}
+    </section>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-chart-bar"></i> إحصائيات عامة
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            متوسط التقييم
+                            <span class="badge bg-primary rounded-pill">
+                                {{ stats.avg_rating|default:"-"|floatformat:1 }}
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            متوسط الإيرادات
+                            <span class="badge bg-success rounded-pill">
+                                ${{ stats.avg_revenue|default:"-"|floatformat:2 }}M
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            متوسط المدة
+                            <span class="badge bg-info rounded-pill">
+                                {{ stats.avg_runtime|default:"-"|floatformat:0 }} دقيقة
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table {
+        font-size: 14px;
+        direction: ltr; /* لتنسيق الأرقام بشكل صحيح */
+    }
+    .table th {
+        background-color: #f8f9fa;
+        position: sticky;
+        top: 0;
+    }
+    .card {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+        min-height: 100%;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .alert {
+        direction: rtl;
+        text-align: right;
+    }
+    .badge {
+        font-family: Arial, sans-serif; /* لضبط اتجاه الأرقام */
+    }
+</style>
+
+<script>
+// إضافة تأثيرات للبطاقات
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.boxShadow = '0 10px 15px rgba(0, 0, 0, 0.1)';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        });
+    });
+});
+</script>
+{% endblock %}
