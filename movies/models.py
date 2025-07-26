@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 #zain
 #hussein
+#tamer
 class Movie(models.Model):
     class Meta:
         verbose_name = _("فيلم")
