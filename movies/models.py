@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 #zain
+#hussein
 class Movie(models.Model):
     class Meta:
         verbose_name = _("فيلم")
